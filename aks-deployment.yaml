@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-devops-docker-agent-deployment
+  labels:
+    app: azure-devops-docker-agent-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: azure-devops-docker-agent-label
+  template:
+    metadata:
+      labels:
+        app: azure-devops-docker-agent-label
+    spec:
+      nodeName: AKS_WINDOWS_NODE_NAME
+      containers:
+      - name: azure-devops-docker-agent
+        image: my.azurecr.io/azdockeragent:latest
+        lifecycle:
+          preStop:
+            exec:
+              command: ["powershell",". c:/azp/stop.ps1"]
+        env:
+          - name: AZP_URL
+            value: "BASE_TFS_URL"
+          - name: AZP_TOKEN
+            value: "PAT"
+          - name: AZP_AGENT_NAME
+            value: "Pipeline-Agent"
+          - name: AZP_POOL
+            value: "PipelineContainers"
+        resources:
+          requests:
+            memory: "2004Mi"
+            cpu: "0.5"
+          limits:
+            memory: "2128Mi"
+            cpu: "1"
+        ports:
+          - containerPort: 8080
+      imagePullSecrets:
+        - name: dockeracr
+      restartPolicy: Always
